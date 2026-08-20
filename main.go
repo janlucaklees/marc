@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 var chromiumCandidates = []string{
@@ -32,11 +33,16 @@ func run() int {
 		fmt.Fprintln(os.Stderr, "usage: marc [-t|--template <name>] [-o|--output <path>] <input.md>")
 		fs.PrintDefaults()
 	}
-	if err := fs.Parse(os.Args[1:]); err != nil {
+	if err := fs.Parse(permuteArgs(os.Args[1:])); err != nil {
 		return 2
 	}
 
 	if fs.NArg() != 1 {
+		if fs.NArg() == 0 {
+			fmt.Fprintln(os.Stderr, "marc: missing input file argument")
+		} else {
+			fmt.Fprintf(os.Stderr, "marc: unexpected arguments: %v\n", fs.Args())
+		}
 		fs.Usage()
 		return 2
 	}
@@ -94,7 +100,15 @@ func run() int {
 
 	templatePath, err := TemplatePath(templatesDir, templateName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "marc: %v\n", err)
+		names, listErr := ListTemplates(templatesDir)
+		switch {
+		case listErr != nil:
+			fmt.Fprintf(os.Stderr, "marc: %v\n", err)
+		case len(names) == 0:
+			fmt.Fprintf(os.Stderr, "marc: %v (no templates available in %s)\n", err, templatesDir)
+		default:
+			fmt.Fprintf(os.Stderr, "marc: %v (available templates: %s)\n", err, strings.Join(names, ", "))
+		}
 		return 1
 	}
 
@@ -115,4 +129,40 @@ func run() int {
 
 	fmt.Printf("Rendered %s\n", outputPath)
 	return 0
+}
+
+// permuteArgs reorders args so that every flag (and its value, if it
+// takes one) comes before all positional arguments. Go's flag package
+// stops parsing at the first non-flag argument, so without this,
+// "marc input.md -t work" would silently treat "-t" and "work" as
+// extra positional arguments instead of a flag. "--" terminates
+// permutation early: everything after it is treated as positional,
+// matching flag.Parse's own handling of "--".
+func permuteArgs(args []string) []string {
+	// Flags that consume the following argument as their value (their
+	// value isn't attached via "="). Keyed by the flag's exact spelling,
+	// since flag.NewFlagSet registers both the short and long forms.
+	valueFlags := map[string]bool{
+		"-t": true, "--template": true,
+		"-o": true, "--output": true,
+	}
+
+	var flags, positional []string
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if a == "--" {
+			positional = append(positional, args[i+1:]...)
+			break
+		}
+		if a == "-" || !strings.HasPrefix(a, "-") {
+			positional = append(positional, a)
+			continue
+		}
+		flags = append(flags, a)
+		if !strings.Contains(a, "=") && valueFlags[a] && i+1 < len(args) {
+			i++
+			flags = append(flags, args[i])
+		}
+	}
+	return append(flags, positional...)
 }

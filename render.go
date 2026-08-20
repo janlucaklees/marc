@@ -73,8 +73,12 @@ func Render(opts RenderOptions) error {
 		"--print-to-pdf=" + tmpPDFPath,
 		"file://" + htmlPath,
 	}
-	if out, err := exec.Command(opts.ChromiumBin, chromiumArgs...).CombinedOutput(); err != nil {
+	out, err := exec.Command(opts.ChromiumBin, chromiumArgs...).CombinedOutput()
+	if err != nil {
 		return fmt.Errorf("chromium failed: %w\n%s", err, out)
+	}
+	if _, err := os.Stat(tmpPDFPath); err != nil {
+		return fmt.Errorf("chromium exited successfully but produced no PDF; its output:\n%s", out)
 	}
 
 	if err := moveFile(tmpPDFPath, opts.OutputPath); err != nil {

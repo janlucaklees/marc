@@ -1,2 +1,10 @@
 /.superpowers/
 /bin/
+
+# Templates and local config are dotfiles-managed, never part of this
+# repo (see CLAUDE.md, "Templates and config live outside this repo").
+# These entries only guard against accidents - this repo never
+# expects to have any of them.
+/template.html
+/templates/
+/config.toml

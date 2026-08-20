@@ -55,3 +55,16 @@ chromium_bin = "/path/to/chromium"
 If a key is absent, `marc` falls back to searching `PATH` for a list of candidate binary names (`pandoc` for the pandoc binary; `chromium`, `chromium-browser`, `google-chrome`, `google-chrome-stable`, `brave-browser` in that order for the browser binary — see `chromiumCandidates` in `main.go`).
 
 When extending or debugging `marc`, remember: nothing under `templates/` or a real `config.toml` should ever be added to this repo — those belong to the user's dotfiles, not to the tool's source.
+
+## First-time setup
+
+A fresh checkout has no templates in place — `marc` won't find one to render with until you put one in your dotfiles. Get a first template in place with:
+
+```
+mkdir -p ~/.config/marc/templates/default
+cp template.html ~/.config/marc/templates/default/template.html
+```
+
+(swap `default` for whatever name you want to pass to `-t/--template`, and adjust the `cp` source if you're starting from a different template).
+
+The `template.html` file at the repo root is exactly that starting point: a leftover copy of the old pandoc HTML template, staged here for convenience so a fresh checkout has something to copy into dotfiles. It is intentionally untracked (see `.gitignore`) — its presence doesn't contradict the "templates never live in this repo" rule above, since it's never committed.

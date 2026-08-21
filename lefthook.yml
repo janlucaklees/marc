@@ -1,0 +1,18 @@
+commit-msg:
+  commands:
+    conventional-commit-format:
+      run: |
+        HEADER=$(head -n1 "{1}")
+
+        # Commits created by a local `git merge` never carry a type prefix; skip them.
+        if echo "$HEADER" | grep -qE '^Merge '; then
+          exit 0
+        fi
+
+        if ! echo "$HEADER" | grep -qE '^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(\([a-zA-Z0-9_./-]+\))?!?: .+'; then
+          echo "✗ Commit header doesn't match Conventional Commits format."
+          echo "  Got:      $HEADER"
+          echo "  Expected: <type>(<scope>)!: <subject>"
+          echo "  Types:    feat fix chore docs style refactor perf test build ci revert"
+          exit 1
+        fi

@@ -21,15 +21,15 @@ These Makefile targets are the only defined workflow commands — use them rathe
 
 ## Architecture
 
-Everything lives in package `main` at the repo root, one `.go` file per concern. Five of the seven have a sibling `_test.go` (`binary.go`, `config.go`, `paths.go`, `preprocess.go`, `template.go`) — pure logic covered by unit tests. `main.go` and `render.go` deliberately have no `_test.go`: they're thin wrappers around external processes (pandoc, Chromium) and CLI wiring, and are instead verified by manual end-to-end testing (build the binary, render a real Markdown file, confirm a real PDF comes out and the error paths behave) rather than `go test`.
+All source lives in package `main` under `cmd/marc/`, one `.go` file per concern — kept separate from the repo-root project files (`go.mod`, `Makefile`, `CLAUDE.md`, `docs/`). Five of the seven have a sibling `_test.go` (`binary.go`, `config.go`, `paths.go`, `preprocess.go`, `template.go`) — pure logic covered by unit tests. `main.go` and `render.go` deliberately have no `_test.go`: they're thin wrappers around external processes (pandoc, Chromium) and CLI wiring, and are instead verified by manual end-to-end testing (build the binary, render a real Markdown file, confirm a real PDF comes out and the error paths behave) rather than `go test`.
 
-- `main.go` — CLI entry point: flag parsing (`-t/--template`, `-o/--output`), wiring config/binary/template resolution together, and invoking `Render`. This is orchestration only; the actual logic lives in the files below.
-- `render.go` — the pandoc/Chromium pipeline itself: `RenderOptions` and `Render`. Reads the input file, preprocesses it, shells out to pandoc to produce self-contained HTML in a temp dir, shells out to headless Chromium to print that HTML to PDF, then moves the result to the output path.
-- `config.go` — resolves marc's XDG config directory (`ConfigDir`) and loads the optional `config.toml` from it (`LoadConfig`).
-- `binary.go` — resolves which pandoc/Chromium executable to run (`ResolveBinary`): a configured override from `config.toml` takes priority, otherwise it searches a list of candidate names on `PATH`.
-- `template.go` — template resolution and the interactive template picker: `ErrNoTemplate`, `TemplatesDir`, `ListTemplates`, `TemplatePath`, `IsInteractive`, `PromptTemplate`. Used by `main.go` when `-t` is omitted.
-- `paths.go` — `DefaultOutputPath`, the input-basename-with-`.pdf` fallback used when `-o` is omitted.
-- `preprocess.go` — Markdown preprocessing before it's handed to pandoc: `PreprocessNewpage` rewrites literal `\newpage` markers into pandoc's `::: pagebreak :::` fenced-div syntax (pandoc has no native page-break syntax), and `ExtractTitle` pulls the first `# ` heading out to use as the rendered document's `<title>`. This mirrors what the project's old `render.sh` script used to do by hand via `sed`/`grep` before `marc` replaced it.
+- `cmd/marc/main.go` — CLI entry point: flag parsing (`-t/--template`, `-o/--output`), wiring config/binary/template resolution together, and invoking `Render`. This is orchestration only; the actual logic lives in the files below.
+- `cmd/marc/render.go` — the pandoc/Chromium pipeline itself: `RenderOptions` and `Render`. Reads the input file, preprocesses it, shells out to pandoc to produce self-contained HTML in a temp dir, shells out to headless Chromium to print that HTML to PDF, then moves the result to the output path.
+- `cmd/marc/config.go` — resolves marc's XDG config directory (`ConfigDir`) and loads the optional `config.toml` from it (`LoadConfig`).
+- `cmd/marc/binary.go` — resolves which pandoc/Chromium executable to run (`ResolveBinary`): a configured override from `config.toml` takes priority, otherwise it searches a list of candidate names on `PATH`.
+- `cmd/marc/template.go` — template resolution and the interactive template picker: `ErrNoTemplate`, `TemplatesDir`, `ListTemplates`, `TemplatePath`, `IsInteractive`, `PromptTemplate`. Used by `main.go` when `-t` is omitted.
+- `cmd/marc/paths.go` — `DefaultOutputPath`, the input-basename-with-`.pdf` fallback used when `-o` is omitted.
+- `cmd/marc/preprocess.go` — Markdown preprocessing before it's handed to pandoc: `PreprocessNewpage` rewrites literal `\newpage` markers into pandoc's `::: pagebreak :::` fenced-div syntax (pandoc has no native page-break syntax), and `ExtractTitle` pulls the first `# ` heading out to use as the rendered document's `<title>`. This mirrors what the project's old `render.sh` script used to do by hand via `sed`/`grep` before `marc` replaced it.
 
 ## Dependencies
 

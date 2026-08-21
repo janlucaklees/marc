@@ -1,7 +1,7 @@
 .PHONY: build install test
 
 build:
-	go build -o bin/marc .
+	go build -o bin/marc ./cmd/marc
 
 install: build
 	mkdir -p $(HOME)/.local/bin

@@ -24,14 +24,17 @@ func main() {
 func run() int {
 	var templateName string
 	var outputPath string
+	var interactive bool
 
 	fs := flag.NewFlagSet("marc", flag.ContinueOnError)
 	fs.StringVar(&templateName, "template", "", "template name (dotfiles-managed)")
 	fs.StringVar(&templateName, "t", "", "shorthand for -template")
 	fs.StringVar(&outputPath, "output", "", "output PDF path (default: input basename with .pdf)")
 	fs.StringVar(&outputPath, "o", "", "shorthand for -output")
+	fs.BoolVar(&interactive, "interactive", false, "always prompt for a template, ignoring config's default_template")
+	fs.BoolVar(&interactive, "i", false, "shorthand for -interactive")
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: marc [-t|--template <name>] [-o|--output <path>] <input.md>")
+		fmt.Fprintln(os.Stderr, "usage: marc [-t|--template <name>] [-i|--interactive] [-o|--output <path>] <input.md>")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(permuteArgs(os.Args[1:])); err != nil {
@@ -95,18 +98,27 @@ func run() int {
 			}
 			fmt.Fprintf(os.Stderr, "marc: no templates found — created a starter template (%s) and config (%s); using it for this run\n",
 				filepath.Join(templatesDir, "default", "template.html"), filepath.Join(configDir, "config.toml"))
-			templateName = "default"
-		} else if len(names) == 1 {
-			templateName = names[0]
-		} else if !IsInteractive(os.Stdin) {
-			fmt.Fprintf(os.Stderr, "marc: %v\n", ErrNoTemplate)
-			return 1
-		} else {
+			names = []string{"default"}
+		}
+
+		defaultTemplate := cfg.DefaultTemplate
+		if !cfg.DefaultTemplateSet {
+			defaultTemplate = "default"
+		}
+
+		switch {
+		case interactive || defaultTemplate == "":
+			if !IsInteractive(os.Stdin) {
+				fmt.Fprintf(os.Stderr, "marc: %v\n", ErrNoTemplate)
+				return 1
+			}
 			templateName, err = PromptTemplate(names, os.Stdin, os.Stdout)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "marc: %v\n", err)
 				return 1
 			}
+		default:
+			templateName = defaultTemplate
 		}
 	}
 

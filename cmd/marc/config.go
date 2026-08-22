@@ -19,6 +19,22 @@ var defaultConfigTOML []byte
 type Config struct {
 	PandocBin   string `toml:"pandoc_bin"`
 	ChromiumBin string `toml:"chromium_bin"`
+
+	// DefaultTemplate names the template used automatically when
+	// -t/--template is omitted (and -i/--interactive isn't given). An
+	// empty string, explicitly set, means always prompt instead. See
+	// DefaultTemplateSet for how to tell "absent" from "explicitly
+	// empty".
+	DefaultTemplate string `toml:"default_template"`
+
+	// DefaultTemplateSet reports whether default_template was present
+	// in config.toml, as opposed to defaulted to "" because the file
+	// or key doesn't exist. Populated by LoadConfig, not by TOML
+	// decoding directly. Callers that find this false should treat
+	// DefaultTemplate as "default" (see BootstrapDefaultConfig and
+	// config.example.toml), not as "always prompt" - that meaning is
+	// reserved for an explicit, present, empty value.
+	DefaultTemplateSet bool `toml:"-"`
 }
 
 // ConfigDir returns marc's config directory: $XDG_CONFIG_HOME/marc if
@@ -43,9 +59,11 @@ func LoadConfig(dir string) (Config, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return cfg, nil
 	}
-	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+	meta, err := toml.DecodeFile(path, &cfg)
+	if err != nil {
 		return Config{}, err
 	}
+	cfg.DefaultTemplateSet = meta.IsDefined("default_template")
 	return cfg, nil
 }
 

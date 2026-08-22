@@ -2,3 +2,8 @@
 # edit either line below to override with an explicit path.
 # pandoc_bin = "/path/to/pandoc"
 # chromium_bin = "/path/to/chromium"
+
+# Template used automatically when -t/--template is omitted (and
+# -i/--interactive isn't given). Change it to switch which template
+# is the default, or set it to "" to always be prompted instead.
+default_template = "default"

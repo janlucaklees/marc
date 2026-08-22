@@ -14,7 +14,7 @@ Usage: `marc [-t|--template <name>] [-o|--output <path>] <input.md>`
 ## Commands
 
 - `make build` — builds the binary to `bin/marc`.
-- `make install` — builds, then copies the binary to `$HOME/.local/bin/marc`.
+- `make install` — builds, then runs `go install ./cmd/marc` (drops the binary in `$(go env GOBIN)`, falling back to `~/go/bin`).
 - `make test` (or `go test ./...`) — runs all package tests.
 
 These Makefile targets are the only defined workflow commands — use them rather than invoking `go build`/`go install` directly.

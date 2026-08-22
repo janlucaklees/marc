@@ -4,8 +4,7 @@ build:
 	go build -o bin/marc ./cmd/marc
 
 install: build
-	mkdir -p $(HOME)/.local/bin
-	cp bin/marc $(HOME)/.local/bin/marc
+	go install ./cmd/marc
 
 test:
 	go test ./...

@@ -1,0 +1,4 @@
+# marc looks up pandoc/chromium on PATH by default. Uncomment and
+# edit either line below to override with an explicit path.
+# pandoc_bin = "/path/to/pandoc"
+# chromium_bin = "/path/to/chromium"

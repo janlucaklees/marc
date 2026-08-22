@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Usage: `marc [-t|--template <name>] [-o|--output <path>] <input.md>`
 
-- `-t/--template` selects a template by name. If omitted and the session is interactive, `marc` lists available templates and prompts for a choice; if omitted and non-interactive (e.g. piped/scripted), it errors rather than guessing.
+- `-t/--template` selects a template by name. If omitted: with exactly one template available, it's used automatically — no prompt; with two or more, `marc` lists them and prompts for a choice if the session is interactive, or errors rather than guessing if non-interactive (e.g. piped/scripted).
 - `-o/--output` sets the output PDF path. If omitted, it defaults to the input path with its extension replaced by `.pdf` (see `paths.go`).
 
 ## Commands
@@ -25,9 +25,9 @@ All source lives in package `main` under `cmd/marc/`, one `.go` file per concern
 
 - `cmd/marc/main.go` — CLI entry point: flag parsing (`-t/--template`, `-o/--output`), wiring config/binary/template resolution together, and invoking `Render`. This is orchestration only; the actual logic lives in the files below.
 - `cmd/marc/render.go` — the pandoc/Chromium pipeline itself: `RenderOptions` and `Render`. Reads the input file, preprocesses it, shells out to pandoc to produce self-contained HTML in a temp dir, shells out to headless Chromium to print that HTML to PDF, then moves the result to the output path.
-- `cmd/marc/config.go` — resolves marc's XDG config directory (`ConfigDir`) and loads the optional `config.toml` from it (`LoadConfig`).
+- `cmd/marc/config.go` — resolves marc's XDG config directory (`ConfigDir`) and loads the optional `config.toml` from it (`LoadConfig`). Also embeds the starter config (`cmd/marc/config.example.toml`, via `//go:embed`) and `BootstrapDefaultConfig`, which writes it out on first run — see "First-time setup" below.
 - `cmd/marc/binary.go` — resolves which pandoc/Chromium executable to run (`ResolveBinary`): a configured override from `config.toml` takes priority, otherwise it searches a list of candidate names on `PATH`.
-- `cmd/marc/template.go` — template resolution and the interactive template picker: `ErrNoTemplate`, `TemplatesDir`, `ListTemplates`, `TemplatePath`, `IsInteractive`, `PromptTemplate`. Used by `main.go` when `-t` is omitted.
+- `cmd/marc/template.go` — template resolution and the interactive template picker: `ErrNoTemplate`, `TemplatesDir`, `ListTemplates`, `TemplatePath`, `IsInteractive`, `PromptTemplate`. Used by `main.go` when `-t` is omitted. Also embeds the starter template (`cmd/marc/template.html`, via `//go:embed`) and `BootstrapDefaultTemplate`, which writes it out on first run — see "First-time setup" below.
 - `cmd/marc/paths.go` — `DefaultOutputPath`, the input-basename-with-`.pdf` fallback used when `-o` is omitted.
 - `cmd/marc/preprocess.go` — Markdown preprocessing before it's handed to pandoc: `PreprocessNewpage` rewrites literal `\newpage` markers into pandoc's `::: pagebreak :::` fenced-div syntax (pandoc has no native page-break syntax), and `ExtractTitle` pulls the first `# ` heading out to use as the rendered document's `<title>`. This mirrors what the project's old `render.sh` script used to do by hand via `sed`/`grep` before `marc` replaced it.
 
@@ -54,17 +54,12 @@ chromium_bin = "/path/to/chromium"
 
 If a key is absent, `marc` falls back to searching `PATH` for a list of candidate binary names (`pandoc` for the pandoc binary; `chromium`, `chromium-browser`, `google-chrome`, `google-chrome-stable`, `brave-browser` in that order for the browser binary — see `chromiumCandidates` in `main.go`).
 
-When extending or debugging `marc`, remember: nothing under `templates/` or a real `config.toml` should ever be added to this repo — those belong to the user's dotfiles, not to the tool's source.
+When extending or debugging `marc`, remember: nothing under `templates/` or a real `config.toml` should ever be added to this repo — those belong to the user's dotfiles, not to the tool's source. The one exception is the starter assets covered next, which live in the tool's source deliberately, as embedded resources rather than user config.
 
-## First-time setup
+## First-time setup is automatic
 
-A fresh checkout has no templates in place — `marc` won't find one to render with until you put one in your dotfiles. Get a first template in place with:
+A fresh checkout has no templates in the user's dotfiles yet. Rather than erroring, `marc` bootstraps: when `-t` is omitted and no templates exist at all in the templates dir, it writes an embedded starter template to `<templates-dir>/default/template.html`, writes an embedded starter `config.toml` (commented-out `pandoc_bin`/`chromium_bin` examples) to the config dir if one isn't already there, prints a note that it did so, and renders immediately using that template — no manual setup step required for the common case.
 
-```
-mkdir -p ~/.config/marc/templates/default
-cp template.html ~/.config/marc/templates/default/template.html
-```
+The source of these starter assets is tracked in the repo, unlike real templates/config: `cmd/marc/template.html` and `cmd/marc/config.example.toml`, embedded via `//go:embed` in `template.go`/`config.go` respectively (see `BootstrapDefaultTemplate`, `BootstrapDefaultConfig`). Edit those files to change what gets bootstrapped for new users.
 
-(swap `default` for whatever name you want to pass to `-t/--template`, and adjust the `cp` source if you're starting from a different template).
-
-The `template.html` file at the repo root is exactly that starting point: a leftover copy of the old pandoc HTML template, staged here for convenience so a fresh checkout has something to copy into dotfiles. It is intentionally untracked (see `.gitignore`) — its presence doesn't contradict the "templates never live in this repo" rule above, since it's never committed.
+This only fires when the templates dir has zero templates in it (the genuine fresh-install case). Passing an explicit `-t name` that doesn't exist, or omitting `-t` when at least one template already exists, behaves as before — resolution error or interactive picker, respectively.

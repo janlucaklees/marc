@@ -4,7 +4,8 @@
 # Templates and local config are dotfiles-managed, never part of this
 # repo (see CLAUDE.md, "Templates and config live outside this repo").
 # These entries only guard against accidents - this repo never
-# expects to have any of them.
-/template.html
+# expects to have any of them. (cmd/marc/template.html and
+# cmd/marc/config.example.toml are the tracked starter assets marc
+# embeds and bootstraps from - not covered by this guard.)
 /templates/
 /config.toml

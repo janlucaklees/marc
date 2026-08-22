@@ -1,11 +1,19 @@
 package main
 
 import (
+	_ "embed"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 )
+
+// defaultConfigTOML is the starter config.toml shipped with marc,
+// written out to the config dir on first run when none exists yet.
+// See BootstrapDefaultConfig.
+//
+//go:embed config.example.toml
+var defaultConfigTOML []byte
 
 // Config holds optional overrides read from config.toml.
 type Config struct {
@@ -39,4 +47,24 @@ func LoadConfig(dir string) (Config, error) {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+// BootstrapDefaultConfig writes the embedded starter config.toml into
+// dir if one doesn't already exist there. It reports whether it
+// created one; a false, nil result means config.toml already exists
+// and nothing was done.
+func BootstrapDefaultConfig(dir string) (bool, error) {
+	path := filepath.Join(dir, "config.toml")
+	if _, err := os.Stat(path); err == nil {
+		return false, nil
+	} else if !os.IsNotExist(err) {
+		return false, err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return false, err
+	}
+	if err := os.WriteFile(path, defaultConfigTOML, 0o644); err != nil {
+		return false, err
+	}
+	return true, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -84,17 +85,28 @@ func run() int {
 			return 1
 		}
 		if len(names) == 0 {
-			fmt.Fprintf(os.Stderr, "marc: no templates found in %s\n", templatesDir)
-			return 1
-		}
-		if !IsInteractive(os.Stdin) {
+			if _, err := BootstrapDefaultTemplate(templatesDir); err != nil {
+				fmt.Fprintf(os.Stderr, "marc: creating starter template: %v\n", err)
+				return 1
+			}
+			if _, err := BootstrapDefaultConfig(configDir); err != nil {
+				fmt.Fprintf(os.Stderr, "marc: creating starter config: %v\n", err)
+				return 1
+			}
+			fmt.Fprintf(os.Stderr, "marc: no templates found — created a starter template (%s) and config (%s); using it for this run\n",
+				filepath.Join(templatesDir, "default", "template.html"), filepath.Join(configDir, "config.toml"))
+			templateName = "default"
+		} else if len(names) == 1 {
+			templateName = names[0]
+		} else if !IsInteractive(os.Stdin) {
 			fmt.Fprintf(os.Stderr, "marc: %v\n", ErrNoTemplate)
 			return 1
-		}
-		templateName, err = PromptTemplate(names, os.Stdin, os.Stdout)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "marc: %v\n", err)
-			return 1
+		} else {
+			templateName, err = PromptTemplate(names, os.Stdin, os.Stdout)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "marc: %v\n", err)
+				return 1
+			}
 		}
 	}
 

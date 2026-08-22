@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,35 @@ import (
 // ErrNoTemplate indicates no template name was given and the session
 // is non-interactive, so no prompt could be shown.
 var ErrNoTemplate = fmt.Errorf("no template specified; pass -t/--template (session is non-interactive)")
+
+// defaultTemplateHTML is the starter template shipped with marc,
+// written out to the templates dir on first run when none exist yet.
+// See BootstrapDefaultTemplate.
+//
+//go:embed template.html
+var defaultTemplateHTML []byte
+
+// BootstrapDefaultTemplate writes the embedded starter template to
+// templatesDir/default/template.html if templatesDir has no templates
+// at all yet. It reports whether it created one; a false, nil result
+// means templates already exist and nothing was done.
+func BootstrapDefaultTemplate(templatesDir string) (bool, error) {
+	names, err := ListTemplates(templatesDir)
+	if err != nil {
+		return false, err
+	}
+	if len(names) > 0 {
+		return false, nil
+	}
+	dir := filepath.Join(templatesDir, "default")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return false, err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "template.html"), defaultTemplateHTML, 0o644); err != nil {
+		return false, err
+	}
+	return true, nil
+}
 
 // TemplatesDir returns the templates directory beneath configDir.
 func TemplatesDir(configDir string) string {

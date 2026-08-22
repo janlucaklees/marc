@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html$if(lang)$ lang="$lang$"$endif$$if(dir)$ dir="$dir$"$endif$>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+$if(title)$
+  <title>$title$</title>
+$endif$
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      color: #1f1f1f;
+      background: #ffffff;
+      padding: 3rem 1.5rem;
+    }
+
+    main {
+      max-width: 740px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    h2 {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #999;
+      margin-top: 2.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #444;
+      margin-top: 1.5rem;
+      margin-bottom: 0.2rem;
+    }
+
+    p { margin-bottom: 1rem; }
+
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    strong { font-weight: 700; color: #111; }
+
+    em { font-style: italic; color: #4b5563; }
+
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 0.85em;
+      background: #eff6ff;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 1.25rem;
+      font-size: 0.95em;
+    }
+
+    th, td {
+      border: 1px solid #e5e5e5;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+
+    th {
+      background: #f8f8f8;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    tr:nth-child(even) td { background: #fafafa; }
+
+    pre {
+      background: #f8f8f8;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin: 0 0 1.25rem;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    blockquote {
+      border-left: 3px solid #f59e0b;
+      background: #fffbeb;
+      padding: 0.75rem 1rem;
+      margin: 1.25rem 0;
+      border-radius: 0 4px 4px 0;
+      color: #78350f;
+    }
+
+    blockquote p { margin-bottom: 0; }
+
+    ul, ol { padding-left: 1.6rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1rem 0;
+      border-radius: 4px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #e5e5e5;
+      margin: 2.5rem 0;
+    }
+
+    pre.mermaid {
+      background: #f8f8f8;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      padding: 1.5rem;
+      overflow: visible;
+      margin: 1.25rem 0;
+    }
+
+    pre.mermaid svg {
+      width: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 2.5cm 3cm;
+        @bottom-center {
+          content: counter(page);
+          font-family: system-ui, sans-serif;
+          font-size: 10px;
+          color: #999;
+        }
+      }
+      body { padding: 0; font-size: 12px; }
+      main { max-width: none; }
+      .pagebreak { page-break-before: always; }
+    }
+
+$if(highlighting-css)$
+    $highlighting-css$
+$endif$
+  </style>
+$for(header-includes)$
+  $header-includes$
+$endfor$
+</head>
+<body>
+  <main>
+$body$
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('pre > code.language-mermaid, pre.mermaid > code, pre.sourceCode.mermaid > code').forEach(function (code) {
+        var pre = code.parentElement;
+        pre.className = 'mermaid';
+        pre.textContent = code.textContent;
+      });
+      mermaid.initialize({ startOnLoad: false, theme: 'default' });
+      mermaid.run();
+    });
+  </script>
+</body>
+</html>

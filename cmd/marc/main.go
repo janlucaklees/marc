@@ -6,16 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
-
-var chromiumCandidates = []string{
-	"chromium",
-	"chromium-browser",
-	"google-chrome",
-	"google-chrome-stable",
-	"brave-browser",
-}
 
 func main() {
 	os.Exit(run())
@@ -74,7 +67,7 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "marc: %v\n", err)
 		return 1
 	}
-	chromiumBin, err := ResolveBinary("chromium", cfg.ChromiumBin, chromiumCandidates, exec.LookPath)
+	chromiumBin, err := ResolveBinary("chromium", cfg.ChromiumBin, chromiumCandidates(runtime.GOOS), exec.LookPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "marc: %v\n", err)
 		return 1

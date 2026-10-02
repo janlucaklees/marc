@@ -18,6 +18,7 @@ func run() int {
 	var templateName string
 	var outputPath string
 	var interactive bool
+	var unpaged bool
 
 	fs := flag.NewFlagSet("marc", flag.ContinueOnError)
 	fs.StringVar(&templateName, "template", "", "template name (dotfiles-managed)")
@@ -26,8 +27,10 @@ func run() int {
 	fs.StringVar(&outputPath, "o", "", "shorthand for -output")
 	fs.BoolVar(&interactive, "interactive", false, "always prompt for a template, ignoring config's default_template")
 	fs.BoolVar(&interactive, "i", false, "shorthand for -interactive")
+	fs.BoolVar(&unpaged, "unpaged", false, "render one long page instead of paginated A4")
+	fs.BoolVar(&unpaged, "u", false, "shorthand for -unpaged")
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: marc [-t|--template <name>] [-i|--interactive] [-o|--output <path>] <input.md>")
+		fmt.Fprintln(os.Stderr, "usage: marc [-t|--template <name>] [-i|--interactive] [-u|--unpaged] [-o|--output <path>] <input.md>")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(permuteArgs(os.Args[1:])); err != nil {
@@ -133,12 +136,17 @@ func run() int {
 		outputPath = DefaultOutputPath(inputPath)
 	}
 
+	if unpaged {
+		fmt.Fprintln(os.Stderr, "marc: unpaged mode — the PDF will be a single page as tall as the document")
+	}
+
 	if err := Render(RenderOptions{
 		InputPath:    inputPath,
 		OutputPath:   outputPath,
 		TemplatePath: templatePath,
 		PandocBin:    pandocBin,
 		ChromiumBin:  chromiumBin,
+		Unpaged:      unpaged,
 	}); err != nil {
 		fmt.Fprintf(os.Stderr, "marc: %v\n", err)
 		return 1

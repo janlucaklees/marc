@@ -16,6 +16,7 @@ type RenderOptions struct {
 	TemplatePath string
 	PandocBin    string
 	ChromiumBin  string
+	Unpaged      bool
 }
 
 // Render runs the full pandoc -> Chromium pipeline: it reads
@@ -62,6 +63,12 @@ func Render(opts RenderOptions) error {
 		return fmt.Errorf("pandoc failed: %w\n%s", err, out)
 	}
 
+	if opts.Unpaged {
+		if err := makeUnpaged(opts.ChromiumBin, htmlPath, tmpDir); err != nil {
+			return err
+		}
+	}
+
 	tmpPDFPath := filepath.Join(tmpDir, "output.pdf")
 	chromiumArgs := []string{
 		"--headless",
@@ -85,6 +92,52 @@ func Render(opts RenderOptions) error {
 		return fmt.Errorf("moving rendered PDF to %s: %w", opts.OutputPath, err)
 	}
 	return nil
+}
+
+// makeUnpaged rewrites the HTML at htmlPath so that printing it yields
+// one page as tall as the content. It first loads a measuring copy in
+// headless Chromium (--dump-dom, with a virtual-time budget so async
+// content like Mermaid can finish) to learn the content height, then
+// writes the final HTML with a matching @page size.
+func makeUnpaged(chromiumBin, htmlPath, tmpDir string) error {
+	html, err := os.ReadFile(htmlPath)
+	if err != nil {
+		return err
+	}
+	measureHTML, err := MeasurementHTML(string(html))
+	if err != nil {
+		return err
+	}
+	measurePath := filepath.Join(tmpDir, "measure.html")
+	if err := os.WriteFile(measurePath, []byte(measureHTML), 0o644); err != nil {
+		return err
+	}
+
+	cmd := exec.Command(chromiumBin,
+		"--headless",
+		"--disable-gpu",
+		"--no-sandbox",
+		fmt.Sprintf("--window-size=%d,1000", unpagedWidthPx),
+		"--virtual-time-budget=10000",
+		"--dump-dom",
+		"file://"+measurePath,
+	)
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	dom, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("chromium (measuring pass) failed: %w\n%s", err, stderr.String())
+	}
+	height, err := ParseMeasuredHeight(string(dom))
+	if err != nil {
+		return err
+	}
+
+	final, err := UnpagedHTML(string(html), height)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(htmlPath, []byte(final), 0o644)
 }
 
 // moveFile moves src to dst, falling back to copy+remove if a direct

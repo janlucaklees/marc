@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `marc` is a small Go CLI that renders a Markdown file to PDF via `pandoc` (Markdown → self-contained HTML) followed by headless Chromium (HTML → PDF), using a named, dotfiles-managed HTML template. There is no application server, no web frontend, no Docker deployment here — just the CLI source, its tests, and the Makefile that builds/installs it.
 
-Usage: `marc [-t|--template <name>] [-i|--interactive] [-o|--output <path>] <input.md>`
+Usage: `marc [-t|--template <name>] [-i|--interactive] [-u|--unpaged] [-o|--output <path>] <input.md>`
+
+- `-u/--unpaged` renders a single page as tall as the content instead of paginated A4 (see `unpaged.go`). Chromium has no page-size flag, so `render.go` first loads a measuring copy via `--dump-dom` to get the content height, then injects a matching `@page` size and prints. It also injects CSS that overrides the template's `@media print` layout so the PDF looks like the on-screen view.
 
 - `-t/--template <name>` selects a template by name directly, erroring if it doesn't exist. Takes priority over everything below if given.
 - `-i/--interactive` forces the template picker for this run, ignoring `config.toml`'s `default_template`.
@@ -23,7 +25,7 @@ These Makefile targets are the only defined workflow commands — use them rathe
 
 ## Architecture
 
-All source lives in package `main` under `cmd/marc/`, one `.go` file per concern — kept separate from the repo-root project files (`go.mod`, `Makefile`, `CLAUDE.md`, `docs/`). Five of the seven have a sibling `_test.go` (`binary.go`, `config.go`, `paths.go`, `preprocess.go`, `template.go`) — pure logic covered by unit tests. `main.go` and `render.go` deliberately have no `_test.go`: they're thin wrappers around external processes (pandoc, Chromium) and CLI wiring, and are instead verified by manual end-to-end testing (build the binary, render a real Markdown file, confirm a real PDF comes out and the error paths behave) rather than `go test`.
+All source lives in package `main` under `cmd/marc/`, one `.go` file per concern — kept separate from the repo-root project files (`go.mod`, `Makefile`, `CLAUDE.md`, `docs/`). Six of the eight have a sibling `_test.go` (`binary.go`, `config.go`, `paths.go`, `preprocess.go`, `template.go`, `unpaged.go`) — pure logic covered by unit tests. `main.go` and `render.go` deliberately have no `_test.go`: they're thin wrappers around external processes (pandoc, Chromium) and CLI wiring, and are instead verified by manual end-to-end testing (build the binary, render a real Markdown file, confirm a real PDF comes out and the error paths behave) rather than `go test`.
 
 - `cmd/marc/main.go` — CLI entry point: flag parsing (`-t/--template`, `-i/--interactive`, `-o/--output`), wiring config/binary/template resolution together, and invoking `Render`. This is orchestration only; the actual logic lives in the files below.
 - `cmd/marc/render.go` — the pandoc/Chromium pipeline itself: `RenderOptions` and `Render`. Reads the input file, preprocesses it, shells out to pandoc to produce self-contained HTML in a temp dir, shells out to headless Chromium to print that HTML to PDF, then moves the result to the output path.

@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+// pandocInputFormat is the pandoc reader (plus extensions) used for
+// the input Markdown. Pandoc's markdown only starts a list after a
+// blank line, so a list directly below a paragraph would otherwise be
+// folded into that paragraph as inline text.
+const pandocInputFormat = "markdown+lists_without_preceding_blankline"
+
 // RenderOptions bundles everything needed to render a single Markdown
 // file to PDF.
 type RenderOptions struct {
@@ -43,7 +49,7 @@ func Render(opts RenderOptions) error {
 	htmlPath := filepath.Join(tmpDir, "output.html")
 
 	pandocArgs := []string{
-		"--from", "markdown",
+		"--from", pandocInputFormat,
 		"--template", opts.TemplatePath,
 		"--embed-resources",
 		"--standalone",

@@ -1,4 +1,5 @@
 package main
+
 func chromiumCandidates(goos string) []string {
 	pathNames := []string{
 		"chromium",

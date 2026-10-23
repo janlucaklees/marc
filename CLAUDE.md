@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Usage: `marc [-t|--template <name>] [-i|--interactive] [-u|--unpaged] [-o|--output <path>] <input.md>`
 
-- `-u/--unpaged` renders a single page as tall as the content instead of paginated A4 (see `unpaged.go`). Chromium has no page-size flag, so `render.go` first loads a measuring copy via `--dump-dom` to get the content height, then injects a matching `@page` size and prints. It also injects CSS that overrides the template's `@media print` layout so the PDF looks like the on-screen view.
+- `-u/--unpaged` renders a single page as tall as the content instead of paginated A4 (see `unpaged.go`). Chromium has no page-size flag, so `render.go` first loads a measuring copy via `--dump-dom` to get the content height, then injects a matching `@page` size and prints. It also injects CSS that overrides the template's `@media print` layout so the PDF looks like the on-screen view. The one exception is pandoc's print-only wrapping of long code lines, which is applied in both passes instead, since a PDF can't scroll.
 
 - `-t/--template <name>` selects a template by name directly, erroring if it doesn't exist. Takes priority over everything below if given.
 - `-i/--interactive` forces the template picker for this run, ignoring `config.toml`'s `default_template`.

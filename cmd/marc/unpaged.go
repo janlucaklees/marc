@@ -26,9 +26,17 @@ const (
 	// is injected as plain (non-@media) CSS after the template's styles,
 	// so it wins over a template's own @media print overrides. The
 	// values mirror the starter template's screen layout.
+	//
+	// The sourceCode rules go the other way: pandoc's highlighting CSS
+	// wraps long code lines only in @media print, which made the print
+	// pass taller than the measured screen layout and pushed the end of
+	// the document onto a second page. A PDF can't scroll, so they apply
+	// that wrapping in both passes.
 	unpagedBaseCSS = `html { width: 900px; }
 body { padding: 3rem 1.5rem; font-size: 16px; }
-main { max-width: 740px; }`
+main { max-width: 740px; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }`
 
 	// measureScript stores the laid-out document height on <body>
 	// shortly after load, giving async content (Mermaid) time to render.

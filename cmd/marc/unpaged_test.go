@@ -43,6 +43,22 @@ func TestMeasurementHTMLInjectsStyleAndScript(t *testing.T) {
 	}
 }
 
+func TestMeasurementHTMLSkipsBodyTagInsideScript(t *testing.T) {
+	// Embedded scripts (e.g. Mermaid) can contain the literal string
+	// "</body>"; the measuring script must go before the real one.
+	html := `<html><head></head><body><main>x</main><script>var s = "</body>";</script></body></html>`
+	got, err := MeasurementHTML(html)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, `var s = "</body>";</script>`) {
+		t.Errorf("embedded script was split:\n%s", got)
+	}
+	if strings.Index(got, "data-marc-height") < strings.Index(got, `var s = "</body>";`) {
+		t.Error("measuring script must come after the embedded script")
+	}
+}
+
 func TestParseMeasuredHeight(t *testing.T) {
 	h, err := ParseMeasuredHeight(`<html><body data-marc-height="2345"><main></main></body></html>`)
 	if err != nil {

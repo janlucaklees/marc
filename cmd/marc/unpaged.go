@@ -54,11 +54,13 @@ var measuredHeightRe = regexp.MustCompile(`data-marc-height="(\d+)"`)
 // MeasurementHTML returns html prepared for the measuring pass: the
 // unpaged base CSS plus the script that records the document height.
 func MeasurementHTML(html string) (string, error) {
-	withCSS, err := insertBefore(html, "</head>", "<style>\n"+unpagedBaseCSS+"\n</style>\n")
+	withCSS, err := insertBefore(html, "</head>", "<style>\n"+unpagedBaseCSS+"\n</style>\n", strings.Index)
 	if err != nil {
 		return "", err
 	}
-	return insertBefore(withCSS, "</body>", measureScript+"\n")
+	// The last "</body>", because embedded scripts (e.g. Mermaid) can
+	// contain that string before the real closing tag.
+	return insertBefore(withCSS, "</body>", measureScript+"\n", strings.LastIndex)
 }
 
 // UnpagedHTML returns html with the unpaged base CSS and a single
@@ -66,7 +68,7 @@ func MeasurementHTML(html string) (string, error) {
 func UnpagedHTML(html string, heightPx int) (string, error) {
 	css := fmt.Sprintf("<style>\n%s\n@page { size: %dpx %dpx; margin: 0; }\n</style>\n",
 		unpagedBaseCSS, unpagedWidthPx, heightPx+unpagedSlackPx)
-	return insertBefore(html, "</head>", css)
+	return insertBefore(html, "</head>", css, strings.Index)
 }
 
 // ParseMeasuredHeight extracts the height recorded by measureScript
@@ -79,8 +81,10 @@ func ParseMeasuredHeight(dom string) (int, error) {
 	return strconv.Atoi(m[1])
 }
 
-func insertBefore(html, tag, insert string) (string, error) {
-	i := strings.Index(html, tag)
+// insertBefore inserts insert before the occurrence of tag that find
+// locates (strings.Index for the first, strings.LastIndex for the last).
+func insertBefore(html, tag, insert string, find func(s, substr string) int) (string, error) {
+	i := find(html, tag)
 	if i < 0 {
 		return "", fmt.Errorf("template output has no %s tag; cannot render unpaged", tag)
 	}
